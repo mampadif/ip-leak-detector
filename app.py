@@ -103,7 +103,7 @@ if st.button("🔍 SCAN MY CONNECTION", type="primary", use_container_width=True
             
             st.markdown(f"""
             <a href="{LINK_VPN}" target="_blank" class="cta-button">
-                🔒 Hide My IP with NordVPN (30% OFF)
+                🔒 Secure My Connection Now with NordVPN
             </a>
             <p style="text-align: center; margin-top: 12px; font-size: 0.8rem; color: #666;">
                 30-Day Money-Back Guarantee • Instant Privacy
