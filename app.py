@@ -1,126 +1,168 @@
 import streamlit as st
 import requests
 import time
-import pandas as pd
-from streamlit_javascript import st_javascript
+import plotly.graph_objects as go
 
-# --- CONFIGURATION ---
-# Replace this with your actual NordVPN affiliate link once approved
-LINK_VPN = "https://nordvpn.com/affiliate/link"
+# --- AFFILIATE CONFIGURATION (YOUR LIVE AWIN LINKS) ---
+# 1. SCALA HOSTING (High Performance VPS)
+LINK_SCALA = "https://www.awin1.com/cread.php?awinmid=82905&awinaffid=2667810&ued=https%3A%2F%2Fwww.scalahosting.com%2F"
 
-st.set_page_config(page_title="IP Leak Detector", page_icon="🛡️", layout="centered")
+# 2. CLOUDWAYS (Premium Cloud Speed)
+LINK_CLOUDWAYS = "https://www.awin1.com/cread.php?awinmid=89935&awinaffid=2667810&ued=https%3A%2F%2Fwww.cloudways.com%2Fen%2Fpricing.php"
 
-# --- CUSTOM CSS (The "Alarm" Style) ---
+# 3. WEBHOSTING UK (Best Value / Managed WordPress)
+LINK_WHUK = "https://www.awin1.com/cread.php?awinmid=27692&awinaffid=2667810&ued=https%3A%2F%2Fwww.webhosting.uk.com%2Fwordpress-hosting"
+
+st.set_page_config(page_title="Site Speed Doctor", page_icon="⚡", layout="centered")
+
+# --- HIDE STREAMLIT STYLE ---
+hide_st_style = """
+            <style>
+            #MainMenu {visibility: hidden;}
+            footer {visibility: hidden;}
+            header {visibility: hidden;}
+            </style>
+            """
+st.markdown(hide_st_style, unsafe_allow_html=True)
+
+# --- CUSTOM CSS ---
 st.markdown("""
 <style>
-    .main-header { font-size: 2.5rem; text-align: center; margin-bottom: 1rem; font-weight: 800; color: #333; }
-    .alert-box { 
-        background-color: #FFEBEE; 
-        border: 2px solid #FF5252; 
-        padding: 30px; 
-        border-radius: 15px; 
-        text-align: center; 
-        margin-bottom: 25px; 
-        box-shadow: 0 4px 15px rgba(255, 82, 82, 0.2);
+    .main-header { font-size: 3rem; text-align: center; font-weight: 800; color: #333; margin-bottom: 10px; }
+    .sub-header { font-size: 1.2rem; text-align: center; color: #666; margin-bottom: 30px; }
+    .metric-box { text-align: center; padding: 20px; background: #f0f2f6; border-radius: 10px; margin: 10px 0; }
+    
+    /* Recommendation Box (Black Text Fixed) */
+    .recommendation-box { 
+        border-left: 5px solid #ff4b4b; 
+        padding: 20px; 
+        background-color: #fff5f5; 
+        border-radius: 5px; 
+        margin-top: 20px;
+        color: #000000 !important;
     }
-    .ip-text { font-family: 'Courier New', monospace; font-size: 3.5rem; font-weight: bold; color: #D32F2F; margin: 10px 0; }
-    .label-text { font-size: 1.1rem; color: #555; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; }
+    .recommendation-box h3, .recommendation-box p, .recommendation-box strong {
+        color: #000000 !important;
+    }
+
+    /* Buttons */
     .cta-button { 
-        display: block; width: 100%; padding: 18px; 
-        background-color: #2962FF; color: white !important; 
-        text-align: center; text-decoration: none; font-weight: bold; 
-        border-radius: 10px; font-size: 1.3rem; 
+        display: block; width: 100%; padding: 12px; margin: 5px 0;
+        text-align: center; color: white !important; text-decoration: none; 
+        font-weight: bold; border-radius: 8px; font-size: 1rem;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         transition: transform 0.1s;
-        box-shadow: 0 6px 12px rgba(41, 98, 255, 0.2);
     }
-    .cta-button:hover { transform: scale(1.02); background-color: #0039CB; }
+    .cta-button:hover { transform: scale(1.02); }
+    
+    /* Brand Colors */
+    .btn-scala { background-color: #f26522; }     /* Scala Orange */
+    .btn-cloudways { background-color: #2c3e50; } /* Cloudways Blue-Grey */
+    .btn-whuk { background-color: #0056b3; }      /* WHUK Blue */
+    
+    /* Info Cards (Black Text Fixed) */
+    .info-card { 
+        background-color: #e8f4f8; 
+        padding: 15px; 
+        border-radius: 8px; 
+        border: 1px solid #d1e7dd; 
+        text-align: center; 
+        height: 100%; 
+        color: #000000 !important;
+    }
+    .info-card b, .info-card h3, .info-card p {
+        color: #000000 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
-# --- LOGIC: CLIENT-SIDE FETCH ---
-def get_client_ip():
-    """Uses JavaScript to fetch the user's real IP address from the browser."""
-    js_code = """await fetch('https://api.ipify.org').then(function(response) { return response.text() })"""
-    return st_javascript(js_code)
-
-def get_location_data(ip_address):
-    """Queries the Geolocation API using the specific IP found."""
+# --- LOGIC ---
+def check_ttfb(url):
     try:
-        response = requests.get(f'http://ip-api.com/json/{ip_address}')
-        return response.json()
-    except Exception:
-        return None
-
-# --- UI LAYOUT ---
-st.markdown('<div class="main-header">🛡️ IP Leak Detector</div>', unsafe_allow_html=True)
-st.write("Hackers, advertisers, and your ISP can see your location. Click below to see exactly what they see.")
-
-# 1. Run JS immediately to be ready (Invisible)
-client_ip = get_client_ip()
-
-# The Trigger
-if st.button("🔍 SCAN MY CONNECTION", type="primary", use_container_width=True):
-    
-    if client_ip:
-        with st.spinner("Triangulating your location..."):
-            time.sleep(1.0) # Dramatic delay
-            data = get_location_data(client_ip)
-
-        if data and data.get('status') == 'success':
-            
-            # 1. THE ALARM (The "Pain")
-            st.markdown(f"""
-            <div class="alert-box">
-                <div class="label-text">YOUR PUBLIC IP ADDRESS IS:</div>
-                <div class="ip-text">{data.get('query')}</div>
-                <div style="color: #D32F2F; font-weight: bold;">⚠️ YOU ARE CURRENTLY EXPOSED</div>
-            </div>
-            """, unsafe_allow_html=True)
-
-            # 2. THE DETAILS (The Proof)
-            c1, c2 = st.columns(2)
-            with c1:
-                st.markdown("**📍 Location Detected:**")
-                st.info(f"{data.get('city')}, {data.get('country')}")
-            with c2:
-                st.markdown("**🏢 ISP Detected:**")
-                st.warning(f"{data.get('isp')}")
-
-            # 3. THE MAP (The Visual Impact)
-            st.markdown("### 🗺️ Your Physical Location")
-            if 'lat' in data and 'lon' in data:
-                map_data = pd.DataFrame({'lat': [data['lat']], 'lon': [data['lon']]})
-                st.map(map_data, zoom=11)
-
-            # 4. THE SOLUTION (The Affiliate Pitch)
-            st.markdown("---")
-            st.markdown("""
-            ### 🛑 Stop broadcasting your life.
-            Your ISP sells this data. Hackers use it to find you.
-            
-            **The only way to hide this is a VPN.**
-            """)
-            
-            st.markdown(f"""
-            <a href="{LINK_VPN}" target="_blank" class="cta-button">
-                🔒 Secure My Connection Now with NordVPN
-            </a>
-            <p style="text-align: center; margin-top: 12px; font-size: 0.8rem; color: #666;">
-                30-Day Money-Back Guarantee • Instant Privacy
-            </p>
-            """, unsafe_allow_html=True)
-
-        else:
-            st.error("Could not locate IP details. Please try again.")
-    else:
-        st.info("Initializing scanner... please click again.")
+        if not url.startswith(('http://', 'https://')): url = 'https://' + url
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
+        start = time.time()
+        response = requests.get(url, headers=headers, timeout=10)
+        ttfb = (time.time() - start) * 1000
+        return {"success": True, "ttfb": round(ttfb, 2), "url": url}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/2092/2092663.png", width=100)
-    st.markdown("### Digital Forensics")
-    st.write("""
-    This tool queries the global DNS network to see how your connection appears to the outside world.
+    st.image("https://cdn-icons-png.flaticon.com/512/2966/2966486.png", width=80)
+    st.markdown("### ⚡ Speed Benchmarks")
+    st.info("""
+    **Time To First Byte (TTFB)**
     
-    **Status:** 🔴 Unprotected
+    🟢 **< 200ms:** Excellent
+    
+    🟡 **200-600ms:** Average
+    
+    🔴 **> 600ms:** Critical
     """)
+    st.markdown("---")
+    st.caption("Tool by Technoworks")
+
+# --- MAIN UI ---
+st.markdown('<div class="main-header">⚡ Site Speed Doctor</div>', unsafe_allow_html=True)
+st.markdown('<div class="sub-header">Check your server response time (TTFB) instantly.</div>', unsafe_allow_html=True)
+
+col1, col2 = st.columns([3, 1])
+with col1:
+    target_url = st.text_input("Website URL", placeholder="example.com", label_visibility="collapsed")
+with col2:
+    scan_btn = st.button("🚀 Test Speed", type="primary", use_container_width=True)
+
+# --- PRE-SCAN DASHBOARD ---
+if not scan_btn:
+    st.markdown("### Why Server Speed Matters")
+    c1, c2, c3 = st.columns(3)
+    with c1: st.markdown('<div class="info-card">📈 <b>SEO Ranking</b><br><br>Google penalizes slow servers.</div>', unsafe_allow_html=True)
+    with c2: st.markdown('<div class="info-card">💰 <b>Conversion</b><br><br>1s delay = 7% drop in sales.</div>', unsafe_allow_html=True)
+    with c3: st.markdown('<div class="info-card">📱 <b>Mobile Users</b><br><br>Slow sites fail on 4G/5G.</div>', unsafe_allow_html=True)
+
+# --- POST-SCAN RESULTS ---
+if scan_btn and target_url:
+    with st.spinner("Pinging server..."):
+        result = check_ttfb(target_url)
+        
+    if result["success"]:
+        ttfb = result["ttfb"]
+        
+        if ttfb < 200: color, msg, status = "green", "Excellent! Your server is fast.", "PASS"
+        elif ttfb < 600: color, msg, status = "orange", "Acceptable, but could be faster.", "WARN"
+        else: color, msg, status = "red", "CRITICAL: Your hosting is too slow.", "FAIL"
+
+        fig = go.Figure(go.Indicator(
+            mode = "gauge+number", value = ttfb, title = {'text': "Response Time (ms)"},
+            gauge = {'axis': {'range': [0, 1500]}, 'bar': {'color': color},
+                     'steps': [{'range': [0, 200], 'color': "#d4edda"}, {'range': [200, 600], 'color': "#fff3cd"}, {'range': [600, 1500], 'color': "#f8d7da"}],
+                     'threshold': {'line': {'color': "red", 'width': 4}, 'thickness': 0.75, 'value': 600}}
+        ))
+        st.plotly_chart(fig, use_container_width=True)
+
+        if status == "FAIL" or status == "WARN":
+            st.markdown(f"""
+            <div class="recommendation-box">
+                <h3 style="margin-top:0">⚠️ Diagnosis: {msg}</h3>
+                <p>Your server took <strong>{ttfb}ms</strong> just to wake up.</p>
+                <p><strong>Solution:</strong> Move to a high-performance host.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            st.markdown("### 🚀 Recommended Fixes:")
+            
+            # --- THE NEW TRIFECTA (SCALA, CLOUDWAYS, WHUK) ---
+            c1, c2, c3 = st.columns(3)
+            with c1:
+                st.markdown(f"""<a href="{LINK_SCALA}" target="_blank" class="cta-button btn-scala">🚀 Scala Hosting<br><span style='font-size:0.8em'>High Performance VPS</span></a>""", unsafe_allow_html=True)
+            with c2:
+                st.markdown(f"""<a href="{LINK_CLOUDWAYS}" target="_blank" class="cta-button btn-cloudways">☁️ Cloudways<br><span style='font-size:0.8em'>Best Tech</span></a>""", unsafe_allow_html=True)
+            with c3:
+                st.markdown(f"""<a href="{LINK_WHUK}" target="_blank" class="cta-button btn-whuk">🇬🇧 WebHosting UK<br><span style='font-size:0.8em'>Best Value</span></a>""", unsafe_allow_html=True)
+        else:
+            st.success(f"✅ {msg}")
+            st.balloons()
+    else:
+        st.error(f"Error: {result.get('error')}")
