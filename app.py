@@ -108,7 +108,7 @@ if data:
     # 4. The Solution (NordVPN Link)
     st.markdown(f"""
     <a href="{LINK_NORDVPN}" target="_blank" class="nord-button">
-        🔒 HIDE MY IP WITH NORDVPN (63% OFF)
+        🔒 HIDE MY IP WITH NORDVPN)
     </a>
     <p style="text-align:center; margin-top:10px; font-size:0.9em; color:#666;">
         30-Day Money-Back Guarantee • Military-Grade Encryption
